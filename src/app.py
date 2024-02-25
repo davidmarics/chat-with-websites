@@ -36,7 +36,7 @@ def get_context_retriever_chain(vector_store):
     prompt = ChatPromptTemplate.from_messages([
       MessagesPlaceholder(variable_name="chat_history"),
       ("user", "{input}"),
-      ("user", "Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
+      ("user", "Your are a Fairwork Award Expert. You will provide clear and concise bullet pointed advice on queries asked. Given the above conversation, generate a search query to look up in order to get information relevant to the conversation")
     ])
     
     retriever_chain = create_history_aware_retriever(llm, retriever, prompt)
@@ -69,26 +69,51 @@ def get_response(user_input):
     return response['answer']
 
 # app config
-st.set_page_config(page_title="Chat with websites", page_icon="🤖")
-st.title("Chat with websites")
+st.set_page_config(page_title="Award Assistant", page_icon="🤖")
+st.title("Award Assistant")
+st.write("Press C to Clear your Conversation, and R to Re-Run")
 
-# sidebar
+# Define options as a list of tuples (description, URL)
+options = [
+    ("Choose your Award", ""),
+    ("Nurses Award", "https://library.fairwork.gov.au/award/?krn=MA000034"),
+    ("Health Professionals", "https://library.fairwork.gov.au/award/?krn=MA000027"),
+    ("Option 3", "URL for Option 3 or leave blank")
+]
+
+# Convert the list of tuples into a list of descriptions for the dropdown
+descriptions = [option[0] for option in options]
+
+# Create the dropdown list with descriptions
+selected_description = st.selectbox(
+    "Choose an option:",
+    descriptions
+)
+
+# Retrieve the URL based on the selected description
+selected_option = next(url for desc, url in options if desc == selected_description)
+
+# Display the selected option (URL)
+st.write(f"You selected: {selected_option}")
+
 with st.sidebar:
-    st.header("Settings")
-    website_url = st.text_input("Website URL")
+    st.header("Welcome...")
+    # Use the selected URL
+    website_url = selected_option
+
 
 if website_url is None or website_url == "":
-    st.info("Please enter a website URL")
+    st.info("Please choose a valid Award")
 
 else:
     # session state
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = [
-            AIMessage(content="Hello, I am a bot. How can I help you?"),
+AIMessage(content=f"Hello, I am a Fairwork Award Expert. How can I help you? You selected: {selected_description}")
+
         ]
     if "vector_store" not in st.session_state:
         st.session_state.vector_store = get_vectorstore_from_url(website_url)    
-
     # user input
     user_query = st.chat_input("Type your message here...")
     if user_query is not None and user_query != "":
